@@ -1,0 +1,178 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Basic Math for Machinists & AutoCAD</title>
+<style>
+:root{--ink:#3b2f20;--ac:#b4541a;--bl:#1f4e79}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--ink);background-color:#f6efdc;background-image:linear-gradient(rgba(31,78,121,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(31,78,121,.07) 1px,transparent 1px),linear-gradient(rgba(31,78,121,.15) 1px,transparent 1px),linear-gradient(90deg,rgba(31,78,121,.15) 1px,transparent 1px);background-size:24px 24px,24px 24px,120px 120px,120px 120px;min-height:100vh}
+body:after{content:"RAYMOND D. ENTAL";position:fixed;inset:0;display:grid;place-items:center;font:900 8vw/1 sans-serif;color:rgba(90,60,20,.06);transform:rotate(-25deg);pointer-events:none;white-space:nowrap}
+main{max-width:980px;margin:auto;padding:18px;position:relative;z-index:2}
+h1{font-size:clamp(28px,6vw,54px);margin:6px 0;color:var(--bl);text-shadow:1px 1px 0 #fff,2px 2px 0 #d9c9a3,3px 3px 0 #c8b68c,4px 4px 8px rgba(0,0,0,.25);letter-spacing:1px}
+h1 span{color:var(--ac);font-size:.5em;display:block}
+.card{background:rgba(255,252,243,.93);border:2px solid #d3bf93;border-radius:14px;padding:16px;margin:14px 0;box-shadow:0 2px 0 #c8b68c,0 8px 0 #e4d6b4,0 16px 28px rgba(60,40,10,.25);transform:perspective(900px) rotateX(1.5deg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.tc{cursor:pointer;transition:.25s}.tc:hover{transform:perspective(900px) rotateX(0) translateY(-6px) rotateY(-3deg)}
+.tc b{color:var(--bl)}.tc small{color:var(--ac);font-weight:700}
+input,select,button{font:inherit;padding:8px 10px;border:2px solid #c8b68c;border-radius:8px;background:#fffdf6;color:var(--ink)}
+button{cursor:pointer;background:var(--bl);color:#fff;border:0;box-shadow:0 4px 0 #12304d;font-weight:700}button:active{transform:translateY(3px);box-shadow:0 1px 0 #12304d}
+button.o{background:var(--ac);box-shadow:0 4px 0 #7a3510}
+.row{display:flex;flex-wrap:wrap;gap:8px}.row>*{flex:1 1 150px}
+.q{margin:12px 0;padding:10px;border-left:5px solid var(--ac);background:#fff;border-radius:8px;user-select:none}
+.o label{display:block;padding:5px 8px;margin:3px 0;border-radius:6px;cursor:pointer;border:1px solid #e4d6b4}.o label:hover{background:#fff3d6}
+.ok{color:#1b7a2f;font-weight:700}.no{color:#b3261e;font-weight:700}
+.hl{outline:4px solid #ff9800;background:#fff3c4!important;animation:bl .8s infinite alternate}@keyframes bl{to{outline-color:#e53935}}
+.scene{position:fixed;width:150px;height:150px;perspective:800px;opacity:.55;pointer-events:none;z-index:1}
+.s1{right:3%;top:12%}.s2{left:2%;bottom:8%;transform:scale(.7)}
+.cube{width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:sp 20s linear infinite}
+.cube i{position:absolute;inset:0;border:2px solid var(--ac);background:rgba(214,170,110,.15);font:700 14px monospace;color:var(--bl);display:grid;place-items:center;font-style:normal}
+.cube i:nth-child(1){transform:translateZ(75px)}.cube i:nth-child(2){transform:rotateY(90deg) translateZ(75px)}.cube i:nth-child(3){transform:rotateY(180deg) translateZ(75px)}.cube i:nth-child(4){transform:rotateY(-90deg) translateZ(75px)}.cube i:nth-child(5){transform:rotateX(90deg) translateZ(75px)}.cube i:nth-child(6){transform:rotateX(-90deg) translateZ(75px)}
+@keyframes sp{to{transform:rotateX(360deg) rotateY(360deg)}}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{border:1px solid #d3bf93;padding:4px}
+[hidden]{display:none!important}
+</style></head><body>
+<div class="scene s1"><div class="cube"><i>7/8</i><i>0.75</i><i>x²</i><i>3/4</i><i>π</i><i>1/16</i></div></div>
+<div class="scene s2"><div class="cube"><i>R</i><i>Ø</i><i>3D</i><i>½</i><i>2.5</i><i>cm</i></div></div>
+<main>
+<header class="row" style="align-items:center"><div style="flex:6"><h1>BASIC MATH <span>for Machinists &amp; AutoCAD Drafting</span></h1><div>Fractions · Decimals · Powers — Units 1 to 13</div></div><button class="o" id="adm" style="flex:1">⚙ Admin</button></header>
+
+<section class="card" id="info"><b>Student Information</b> (editable before starting a quiz)
+<div class="row" style="margin-top:8px"><input id="ln" placeholder="Last name"><input id="fn" placeholder="First name"><input id="mi" placeholder="M.I." maxlength="2" style="flex:0 1 80px"><select id="sec"></select></div>
+<input id="em" type="email" placeholder="Valid email address" style="width:100%;margin-top:8px"></section>
+
+<section class="grid" id="tops"></section>
+
+<section class="card" id="lec" hidden></section>
+<section class="card" id="qz" hidden><div class="row" style="align-items:center"><b id="qh"></b><b id="tm" style="text-align:right"></b></div><div id="qb"></div><button class="o" id="sub" style="width:100%">Submit Answers</button><p><small>⚠ Opening another tab or window closes and auto-submits this quiz.</small></p></section>
+<section class="card" id="res" hidden></section>
+
+<section class="card" id="adp" hidden>
+<b>Admin Panel</b>
+<p><b>① Google Sheet link (Apps Script web app URL ending in /exec):</b></p>
+<input id="surl" class="hl" style="width:100%" placeholder="⬅ PASTE YOUR GOOGLE SCRIPT /exec LINK HERE">
+<div class="row" style="margin-top:8px"><button id="ssave">Save link</button><button id="stest" class="o">Send test row</button></div>
+<p><b>② Change admin password:</b></p><div class="row"><input id="npw" type="password" placeholder="New password"><button id="psave">Save password</button></div>
+<p><b>③ Results on this device:</b></p><div style="overflow-x:auto"><table id="lg"></table></div><button id="clr" class="o" style="margin-top:8px">Clear log</button>
+</section>
+</main>
+<script>
+/* ╔══════════════════════════════════════════════════════════════╗
+   ║ ★★★ PASTE YOUR GOOGLE SHEET (APPS SCRIPT /exec) LINK HERE ★★★ ║
+   ╚══════════════════════════════════════════════════════════════╝ */
+const SHEET_URL="https://script.google.com/macros/s/AKfycbw9AUBfHwsVuOYWGNwclcw-x81gQlE2BD1rHRI_772QfsNrTVExw2Ci-fBBzzn__Gnt/exec";   // <<<<<<<<<< YOUR SHEET LINK (replace here if you redeploy)
+/* (You can also paste it later in Admin Panel → box ①) */
+
+const $=s=>document.querySelector(s),ts=d=>d.toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'medium'});
+const url=()=>localStorage.sheet||SHEET_URL, pw=()=>localStorage.pw||'RDDE_2026';
+$('#sec').innerHTML='<option value="">Section ▾</option>'+['1A','1B','1C','1D','1E'].map(s=>`<option>Section ${s}</option>`).join('');
+/* ---------- seeded random & helpers ---------- */
+function H(s){let h=1779033703;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}return h>>>0}
+function RNG(a){return()=>{a|=0;a=a+1831565813|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let r=Math.random;const ri=(a,b)=>a+Math.floor(r()*(b-a+1)),pk=a=>a[ri(0,a.length-1)];
+const g=(a,b)=>b?g(b,a%b):a,lcm=(a,b)=>a*b/g(a,b),R=(n,d)=>{let k=g(Math.abs(n),d)||1;return[n/k,d/k]};
+const S=([n,d])=>{let w=Math.floor(n/d),m=n%d;return m?(w?w+' ':'')+m+'/'+d:''+w};
+const ad=(a,b)=>R(a[0]*b[1]+b[0]*a[1],a[1]*b[1]),sb=(a,b)=>R(a[0]*b[1]-b[0]*a[1],a[1]*b[1]),ml=(a,b)=>R(a[0]*b[0],a[1]*b[1]),dv=(a,b)=>R(a[0]*b[1],a[1]*b[0]);
+const t=a=>a[0]+'/'+a[1],mt=m=>m[0]+' '+m[1]+'/'+m[2],mf=m=>[m[0]*m[2]+m[1],m[2]];
+const pf=()=>{let d=pk([4,8,16,32]);return[ri(1,d-1),d]},mxd=()=>{let d=pk([2,4,8,16]);return[ri(1,9),ri(1,d-1),d]};
+const fx=(v,p)=>v.toFixed(p),rd=(N,dec,p)=>fx(Math.floor(N/10**(dec-p)+.5)/10**p,p),n10=v=>''+parseFloat(v.toPrecision(10));
+function mk(q,a,ds){a=''+a;let o=[a];for(let x of ds){x=''+x;if(!o.includes(x)&&!/NaN|Inf|-/.test(x))o.push(x)}let k=1;while(o.length<4){let x=a.replace(/\d+/,m=>+m+k++);if(!o.includes(x))o.push(x)}
+ o=o.slice(0,4).map(v=>[r(),v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);return{q,a,o}}
+/* ---------- question generators (10 per topic) ---------- */
+const G={
+A:[()=>{let d=ri(3,9),n=ri(1,d-1),k=ri(2,6);return mk(`Reduce ${n*k}/${d*k} to lowest terms.`,S(R(n,d)),[S(R(n+1,d)),S(R(n,d+1)),`${n*k}/${d*k-k}`])},
+()=>{let d=pk([4,8,16]),n=ri(1,d-1),k=ri(2,5);return mk(`Express ${n}/${d} as an equivalent fraction with ${d*k} as the denominator.`,`${n*k}/${d*k}`,[`${n+k}/${d*k}`,`${n*(k+1)}/${d*k}`,`${n*k}/${d*k+k}`])},
+()=>{let m=mxd();return mk(`Express ${mt(m)} as an improper fraction.`,t(mf(m)),[`${m[0]+m[1]}/${m[2]}`,`${m[0]*m[1]+m[2]}/${m[2]}`,`${m[0]*m[2]+m[1]}/${m[2]+1}`])},
+()=>{let d=ri(3,12),w=ri(1,9),n=ri(1,d-1),N=w*d+n;return mk(`Express ${N}/${d} as a mixed number in lowest terms.`,S(R(N,d)),[S([N,d+1]),`${w+1} ${n}/${d}`,`${w} ${d-n}/${d}`])},
+()=>{let x=[],p=[2,3,4,6,8,12,16];while(x.length<3){let v=pk(p);x.includes(v)||x.push(v)}let l=x.reduce((a,b)=>lcm(a,b));return mk(`Find the least common denominator of 1/${x[0]}, 1/${x[1]} and 1/${x[2]}.`,l,[l*2,x[0]*x[1]*x[2],l+x[0]])},
+()=>{let x=pf(),y=pf();return mk(`Add: ${t(x)} + ${t(y)}`,S(ad(x,y)),[S(R(x[0]+y[0],x[1]+y[1])),S(ad(x,[y[0]+1,y[1]])),S(ad(x,[y[0],y[1]*2]))])},
+()=>{let x,y;do{x=pf();y=pf()}while(x[0]*y[1]<=y[0]*x[1]);return mk(`Subtract ${t(y)} from ${t(x)}.`,S(sb(x,y)),[S(R(x[0]-y[0],x[1])),S(ad(x,y)),S(sb(x,[y[0]+1,y[1]]))])},
+()=>{let a=mxd(),b=mxd();return mk(`Add: ${mt(a)} + ${mt(b)}`,S(ad(mf(a),mf(b))),[S(ad(mf(a),[b[1],b[2]])),S(R(mf(a)[0]+mf(b)[0],a[2]+b[2])),S(ad(mf(a),mf(b)).map((v,i)=>i?v:v+1))])},
+()=>{let b=mxd(),a=mxd();a[0]=b[0]+ri(1,5);return mk(`Subtract ${mt(b)} from ${mt(a)}.`,S(sb(mf(a),mf(b))),[S(ad(mf(a),mf(b))),S(R(mf(a)[0]-mf(b)[0],a[2])),S(sb(mf(a),[b[0]*b[2],b[2]]))])},
+()=>{let x=pf(),y=pf(),z=pf(),s=ad(ad(x,y),z);return mk(`A shaft has three sections ${t(x)}", ${t(y)}" and ${t(z)}" long. Total length?`,S(s)+'"',[S(ad(x,y))+'"',S(R(x[0]+y[0]+z[0],x[1]+y[1]+z[1]))+'"',S([s[0]+1,s[1]])+'"'])}],
+B:[()=>{let x=pf(),y=pf();return mk(`Multiply: ${t(x)} × ${t(y)}`,S(ml(x,y)),[S(ad(x,y)),S(R(x[0]*y[0],x[1]+y[1])),S(dv(x,y))])},
+()=>{let a=mxd(),b=mxd();return mk(`Multiply: ${mt(a)} × ${mt(b)}`,S(ml(mf(a),mf(b))),[S(ad(mf(a),mf(b))),S(ad([a[0]*b[0],1],ml([a[1],a[2]],[b[1],b[2]]))),S(dv(mf(a),mf(b)))])},
+()=>{let x=pf(),y=pf();return mk(`Divide: ${t(x)} ÷ ${t(y)}`,S(dv(x,y)),[S(ml(x,y)),S(dv(y,x)),S(R(x[0]*y[1],x[1]*y[0]+1))])},
+()=>{let a=mxd(),b=mxd();return mk(`Divide: ${mt(a)} ÷ ${mt(b)}`,S(dv(mf(a),mf(b))),[S(ml(mf(a),mf(b))),S(dv(mf(b),mf(a))),S(ad(mf(a),mf(b)))])},
+()=>{let x=pf();return mk(`To divide by ${t(x)}, you multiply by which fraction?`,x[1]+'/'+x[0],[t(x),`${x[0]+1}/${x[1]}`,`${x[1]}/${x[0]+1}`])},
+()=>{let n=ri(1,7),p=pk([8,16,32]),v=n*p/8;return mk(`A bolt has a pitch of 1/${p}". How many threads are in ${n}/8" of thread length?`,v,[v+2,v*2,Math.max(1,v-1)])},
+()=>{let s=pf(),k=ri(3,7),L=ml(s,[k-1,1]);return mk(`${k} equally spaced holes run ${S(L)}" from the first to the last. Distance between consecutive holes?`,S(s)+'"',[S(dv(L,[k,1]))+'"',S(ml(L,[k-1,1]))+'"',S(dv(L,[k+1,1]))+'"'])},
+()=>{let x=pf(),y=pf(),z=pf();return mk(`Evaluate (order of operations): ${t(x)} + ${t(y)} × ${t(z)}`,S(ad(x,ml(y,z))),[S(ml(ad(x,y),z)),S(dv(ad(x,y),z)),S(ad(ml(x,y),z))])},
+()=>{let x=pf(),y=pf(),z=pf();return mk(`Complex fraction: (${t(x)} + ${t(y)}) ÷ ${t(z)}`,S(dv(ad(x,y),z)),[S(ml(ad(x,y),z)),S(ad(x,dv(y,z))),S(dv(z,ad(x,y)))])},
+()=>{let N=ri(5,30),a=mxd(),w=ri(1,4),u=ad(mf(a),[w,32]);return mk(`How many inches of drill rod make ${N} drills, each ${mt(a)}" long, allowing ${w}/32" waste per drill?`,S(ml([N,1],u))+'"',[S(ml([N,1],mf(a)))+'"',S(ad(ml([N,1],mf(a)),[w,32]))+'"',S(ml([N+1,1],u))+'"'])}],
+C:[()=>{let k=ri(2,5),n=ri(1,10**k-1);return mk(`Write ${n}/${10**k} as a decimal fraction.`,fx(n/10**k,k),[fx(n/10**(k+1),k+1),fx(n/10**(k-1),k-1),fx(n/10**(k+2),k+2)])},
+()=>{let x=ri(11,999)/10**ri(2,4),p=pk([10,100,1000,10000]),v=x*p;return mk(`${x} × ${p} = ?`,n10(v),[n10(v*10),n10(v/10),n10(x/p)])},
+()=>{let N=ri(100000,999999);return mk(`Round ${fx(N/1e6,6)} to 3 decimal places.`,rd(N,6,3),[fx(Math.floor(N/1000)/1000,3),rd(N,6,4),rd(N,6,2)])},
+()=>{let N=ri(10000,99999);return mk(`Round ${fx(N/1e5,5)} to 2 decimal places.`,rd(N,5,2),[fx(Math.floor(N/1000)/100,2),rd(N,5,3),rd(N,5,1)])},
+()=>{let d=pk([3,6,7,9,11,13,15]),n=ri(1,d-1);return mk(`Express ${n}/${d} as a 4-place decimal.`,fx(n/d,4),[fx(Math.floor(n/d*1e4)/1e4,4),fx(d/n,4),fx(n/d,2)])},
+()=>{let d=pk([8,16,32,4,5,20,25,40]),n=ri(1,d-1),v=n/d,s=(''+v).split('.')[1];return mk(`Express ${v} as a common fraction in lowest terms.`,S(R(n,d)),[`${s}/${10**s.length}`,S(R(n+1,d)),S(R(n,d+1))])},
+()=>{let p=['tenths','hundredths','thousandths','ten-thousandths'],ds=[1,2,3,4,5,6,7,8,9].map(v=>[r(),v]).sort((a,b)=>a[0]-b[0]).map(v=>v[1]).slice(0,4),i=ri(0,3);return mk(`In ${ri(1,9)}.${ds.join('')}, the digit ${ds[i]} is in the ____ place.`,p[i],p.filter((_,j)=>j!=i))},
+()=>{let A=ri(1,5),B=ri(A+1,9);return mk(`What decimal fraction of distance B is distance A (4 places)? A = ${A}", B = ${B}"`,fx(A/B,4),[fx(B/A,4),fx(A/B,3),fx(A/B*10,4)])},
+()=>{let n=ri(1,999);return mk(`Which decimal is "${n} ten-thousandths"?`,fx(n/1e4,4),[fx(n/1e3,3),fx(n/1e5,5),fx(n/1e2,2)])},
+()=>{let N=ri(1000000,9999999);return mk(`Round ${fx(N/1e6,6)} to 4 decimal places.`,rd(N,6,4),[fx(Math.floor(N/100)/1e4,4),rd(N,6,3),rd(N,6,5)])}],
+D:[()=>{let a=ri(100,999)/1e3,b=ri(10,99)/10,c=ri(5,99)/100,s=a+b+c;return mk(`Add: ${a} + ${b} + ${c}`,fx(s,3),[fx(s+.1,3),fx(s-.01,3),fx(s+1,3)])},
+()=>{let a=ri(100,999)/10,b=ri(100,999)/1e3,s=a-b;return mk(`Subtract ${b} from ${a}.`,fx(s,3),[fx(a+b,3),fx(s+.1,3),fx(s-.01,3)])},
+()=>{let a=ri(100,999)/100,b=ri(2,99)/100,v=a*b;return mk(`Multiply: ${a} × ${b}`,fx(v,4),[fx(v*10,3),fx(v/10,5),fx(a+b,2)])},
+()=>{let a=ri(100,999)/100,b=ri(30,400)/100,v=a/b;return mk(`Divide ${a} by ${b}, rounded to 2 decimal places.`,fx(v,2),[fx(b/a,2),fx(v*10,2),fx(Math.floor(v*100)/100+.01,2)])},
+()=>{let c=ri(1000,9999)/1e4;return mk(`Circular pitch = ${c}". Working depth = 0.6366 × pitch (4 places).`,fx(.6366*c,4),[fx(.5*c,4),fx(.05*c,4),fx(.6366*c*10,3)])},
+()=>{let L=ri(30000,60000)/100,p=ri(1000,2500)/100,w=ri(200,500)/100,v=Math.floor(L/(p+w));return mk(`How many complete ${p} mm bushings can be cut from a ${L} mm bar, allowing ${w} mm waste per piece?`,v,[v+1,v-1,Math.floor(L/p)])},
+()=>{let f=pk([.005,.008,.01,.012,.015,.02,.025]),n=ri(50,400),A=+(n*f).toFixed(3);return mk(`Tool feed is ${f} in/rev. How many revolutions while the tool advances ${A} in?`,n,[n*10,Math.round(n/10),n+f*1000])},
+()=>{let l=ri(500,1500)/1e3,th=ri(50,160)/10;return mk(`A bolt has ${th} threads in ${l} in. Pitch to 3 places?`,fx(l/th,3),[fx(th/l,3),fx(l*th,3),fx(l/th*10,3)])},
+()=>{let m=pk([.02,.025,.04,.05,.08]),h=pk([1.25,1.5,2.5,3.2]),v=Math.floor(+(h*60/m).toFixed(6));return mk(`A machine makes one piece in ${m} min. How many complete pieces in ${h} hours?`,v,[Math.floor(h/m),Math.floor(h*m*60),v+100])},
+()=>{let a=ri(300,900)/100,b=ri(100,600)/100,c=ri(1,99)/100,s=a+b+c;return mk(`Three cuts of ${a}, ${b} and ${c} mm are made. Total stock removed, to 2 places?`,fx(s,2),[fx(s+.1,2),fx(s-.01,2),fx(a+b,2)])}],
+E:[()=>{let b=ri(2,9),k=ri(2,4);return mk(`Find ${b}^${k}.`,b**k,[b*k,b**k+b,b**(k+1)])},
+()=>{let x=ri(11,99)/100;return mk(`Find ${x}² (4 places).`,fx(x*x,4),[fx(x*2,2),fx(x*x*10,3),fx(x*x/10,5)])},
+()=>{let n=ri(1,9),d=ri(n+1,12);return mk(`Find (${n}/${d})².`,S(R(n*n,d*d)),[S(R(n*n,d)),S(R(n,d*d)),S(R(n*2,d*2))])},
+()=>{let x=ri(100,2500)/100;return mk(`Area of a square plate with side ${x} mm (A = s²), 2 places?`,fx(x*x,2),[fx(x*2,2),fx(x*4,2),fx(x*x*10,2)])},
+()=>{let x=ri(10,95)/10;return mk(`Volume of a cube with side ${x} in (V = s³), 1 decimal place?`,fx(x**3,1),[fx(x*x,1),fx(x*3,1),fx(x**3*2,1)])},
+()=>{let a=ri(30,300)/100,h=ri(50,500)/100;return mk(`Cylinder volume V = π r² h, π = 3.14, r = ${a} in, h = ${h} in (2 places).`,fx(3.14*a*a*h,2),[fx(3.14*a*h,2),fx(3.14*a*a*h/3,2),fx(3.14*4*a*a*h,2)])},
+()=>{let a=ri(5,200)/10;return mk(`Area of a circle A = π r², π = 3.14, r = ${a} mm (nearest whole).`,Math.round(3.14*a*a),[Math.round(3.14*2*a),Math.round(3.14*a),Math.round(3.14*a*a*2)])},
+()=>{let a=ri(2,9),b=ri(2,6),c=ri(1,30);return mk(`Evaluate: ${a} × ${b}² − ${c}`,a*b*b-c,[(a*b)**2-c,a*b*b+c,a*b*2-c])},
+()=>{let a=ri(2,9),b=ri(2,9);return mk(`Evaluate: (${a} + ${b})²`,(a+b)**2,[a*a+b*b,(a+b)*2,a*a+b])},
+()=>{let D=ri(10,90)/10,h=ri(10,90)/10;return mk(`Cone volume V = 0.2618 × D² × H, D = ${D} in, H = ${h} in (nearest whole).`,Math.round(.2618*D*D*h),[Math.round(.2618*D*h),Math.round(.2618*D*D*h/3),Math.round(.2618*D*D*h*2)])}]};
+/* ---------- lectures ---------- */
+const yt=q=>`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+const T=[
+{k:'A',t:'Fractions: Basics, Add & Subtract',u:'Units 1–3',v:'reduce fractions add subtract mixed numbers machinist math',l:'<b>Fraction</b> = equal parts taken of a whole (numerator ÷ denominator).<ul><li>Lowest terms: divide both terms by the GCF (12/42 → 2/7).</li><li>Equivalent fractions: multiply or divide both terms by the same number.</li><li>Mixed → improper: whole × denominator + numerator, same denominator (4½ = 9/2).</li><li>Improper → mixed: divide numerator by denominator (11/4 = 2¾).</li><li>LCD: smallest number all denominators divide into.</li><li>Add/subtract: express with the LCD, add/subtract numerators, reduce. Mixed numbers: wholes first, then fractions; borrow 1 whole when needed.</li></ul><i>AutoCAD link: UNITS command → Fractional type; blueprint dimensions in inches.</i>'},
+{k:'B',t:'Fractions: Multiply, Divide, Combined',u:'Units 4–6',v:'multiply divide fractions cancellation order of operations',l:'<ul><li>Multiply: numerators × numerators, denominators × denominators, reduce. Cancel common factors first.</li><li>Mixed numbers → improper fractions before multiplying or dividing.</li><li>Divide: invert the divisor, then multiply (7/8 ÷ 1/16 = 14 threads).</li><li>Equally spaced holes: spaces = holes − 1.</li><li>Order: parentheses → × ÷ left to right → + − left to right.</li><li>Complex fraction: numerator ÷ denominator, each treated as in parentheses.</li></ul><i>AutoCAD link: dividing a length equally (DIVIDE / ARRAY spacing).</i>'},
+{k:'C',t:'Decimal Fractions & Conversions',u:'Units 8–9',v:'decimal fractions place value rounding fraction to decimal machinist',l:'<ul><li>Decimal fractions have denominators that are powers of 10. Places: tenths, hundredths, thousandths, ten-thousandths…</li><li>Move the point right ×10 per place, left ÷10 per place.</li><li>Rounding: digit after the required place &lt; 5 drop; ≥ 5 add 1.</li><li>Fraction → decimal: numerator ÷ denominator (divide one place beyond, then round).</li><li>Decimal → fraction: digits over 1 followed by as many zeros as places, reduce (0.375 = 3/8).</li></ul><i>AutoCAD link: LUPREC / DIMDEC set decimal precision.</i>'},
+{k:'D',t:'Decimal Operations',u:'Units 10–12',v:'adding subtracting multiplying dividing decimals machinist',l:'<ul><li>Add/subtract: line up the decimal points; pad with zeros.</li><li>Multiply: multiply as whole numbers; decimal places of the product = places in both factors.</li><li>Divide: move the divisor’s point to make it whole, move the dividend’s point the same number of places; carry one extra place then round.</li><li>Uses: feeds, gear depths (0.6366 × circular pitch), threads per inch, stock allowances.</li></ul><i>AutoCAD link: coordinate and dimension values are decimals.</i>'},
+{k:'E',t:'Powers & Formulas',u:'Unit 13',v:'powers exponents area volume formulas machinist math',l:'<ul><li>Power = repeated factor; 5³ = 5×5×5 = 125.</li><li>(a/b)² squares both terms; a/b² squares only the denominator.</li><li>Do powers first, then × ÷, then + −.</li><li>Square A = s²; cube V = s³; circle A = πr²; cylinder V = πr²h (π = 3.14); cone V = 0.2618 D² H.</li></ul><i>AutoCAD link: AREA and MASSPROP return areas/volumes you can verify.</i>'}];
+$('#tops').innerHTML=T.map((x,i)=>`<div class="card tc" data-i="${i}"><small>${x.u}</small><br><b>${x.t}</b><br>10 unique items</div>`).join('');
+/* ---------- state ---------- */
+let cur,Q,live=0,t0,iv;
+const info=()=>{let v=i=>$('#'+i).value.trim(),o={ln:v('ln'),fn:v('fn'),mi:v('mi').toUpperCase().replace('.',''),sec:v('sec'),em:v('em').toLowerCase()};o.ok=!!(o.ln&&o.fn&&o.mi&&o.sec&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(o.em));return o};
+const show=id=>['lec','qz','res','adp'].forEach(x=>$('#'+x).hidden=x!=id);
+$('#tops').onclick=e=>{let c=e.target.closest('.tc');if(!c||live)return;cur=T[c.dataset.i];$('#lec').innerHTML=`<h2>${cur.t} <small>(${cur.u})</small></h2>${cur.l}<p><a href="${yt('machinist math '+cur.v)}" target="_blank">▶ Watch the lecture video(s) on YouTube</a></p><button id="go" class="o">Start Quiz (10 items)</button>`;show('lec');$('#lec').scrollIntoView({behavior:'smooth'});$('#go').onclick=start};
+function start(){let u=info();if(!u.ok)return alert('Complete last name, first name, M.I., section and a valid email first.');
+ let key='att:'+u.em+cur.k,att=(+localStorage[key]||0)+1;localStorage[key]=att;
+ r=RNG(H([u.ln,u.fn,u.mi,u.em,cur.k,att].join('|').toLowerCase()));Q=G[cur.k].map(f=>f());
+ live={u,att};t0=new Date();['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=true);
+ $('#qh').textContent=`${cur.t} — Attempt ${att}`;$('#qb').innerHTML=Q.map((q,i)=>`<div class="q"><b>${i+1}.</b> ${q.q}<div class="o">${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}</div></div>`).join('');
+ show('qz');iv=setInterval(()=>{let s=Math.floor((Date.now()-t0)/1000);$('#tm').textContent=`⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`},1000)}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&live)finish('Closed: student left the tab')});
+window.addEventListener('blur',()=>{if(live)finish('Closed: student left the tab')});
+document.addEventListener('contextmenu',e=>{if(live)e.preventDefault()});
+$('#sub').onclick=()=>{let un=Q.filter((_,i)=>!document.querySelector(`input[name=q${i}]:checked`)).length;if(!un||confirm(un+' item(s) unanswered. Submit anyway?'))finish('Submitted')};
+function finish(reason){if(!live)return;let {u,att}=live;live=0;clearInterval(iv);let end=new Date();
+ let key=Q.map((q,i)=>{let c=document.querySelector(`input[name=q${i}]:checked`),s=c?q.o[+c.value]:'';return{n:i+1,q:q.q,a:q.a,s,ok:s===q.a}}),sc=key.filter(k=>k.ok).length;
+ let rec={start:ts(t0),end:ts(end),ln:u.ln,fn:u.fn,mi:u.mi,sec:u.sec,em:u.em,topic:cur.t,attempt:att,score:sc,reason,key,keyText:key.map(k=>`${k.n}) ${k.s||'-'} | ${k.a} ${k.ok?'✓':'✗'}`).join('; ')};
+ ['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=false);
+ let c=img(rec);c.toBlob(b=>{let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`${u.ln}_${u.fn}_${cur.k}_attempt${att}.png`;a.click()});
+ let lg=JSON.parse(localStorage.log||'[]');lg.push({end:rec.end,n:`${u.ln}, ${u.fn} ${u.mi}.`,sec:u.sec,em:u.em,tp:cur.t,att,sc,reason});localStorage.log=JSON.stringify(lg);
+ send(rec);
+ $('#res').innerHTML=`<h2>Score: ${sc}/10 <small>(Attempt ${att})</small></h2><p>${reason}<br>Start: ${rec.start}<br>End: ${rec.end}</p>${key.map(k=>`<p><b>${k.n}.</b> ${k.q}<br><span class="${k.ok?'ok':'no'}">Your answer: ${k.s||'(none)'} ${k.ok?'✓':'✗'}</span> — Answer key: <b>${k.a}</b></p>`).join('')}<p>Result picture downloaded automatically.</p>`;show('res')}
+function send(rec){let u=url();if(/^https:\/\/script\.google\.com\//.test(u))fetch(u,{method:'POST',mode:'no-cors',body:JSON.stringify(rec)}).catch(()=>{})}
+function img(rec){const W=900,c=document.createElement('canvas'),x=c.getContext('2d');
+ const wrap=(s,w,f)=>{x.font=f;let L=[],l='';for(const wd of s.split(' ')){let n=l?l+' '+wd:wd;if(x.measureText(n).width>w&&l){L.push(l);l=wd}else l=n}L.push(l);return L};
+ const rows=rec.key.map(k=>({l:wrap(`${k.n}. ${k.q}`,840,'15px Segoe UI'),k})),H=320+rows.reduce((s,r)=>s+r.l.length*20+44,0);c.width=W;c.height=H;
+ x.fillStyle='#f6efdc';x.fillRect(0,0,W,H);x.strokeStyle='rgba(31,78,121,.12)';for(let i=0;i<W;i+=30){x.beginPath();x.moveTo(i,0);x.lineTo(i,H);x.stroke()}for(let j=0;j<H;j+=30){x.beginPath();x.moveTo(0,j);x.lineTo(W,j);x.stroke()}
+ x.fillStyle='#1f4e79';x.fillRect(0,0,W,70);x.fillStyle='#fff';x.font='bold 26px Segoe UI';x.fillText('BASIC MATH MODULE — RESULT',20,44);
+ x.fillStyle='#3b2f20';x.font='16px Segoe UI';[`Name: ${rec.ln}, ${rec.fn} ${rec.mi}.   ${rec.sec}`,`Email: ${rec.em}`,`Topic: ${rec.topic}`,`Attempt No.: ${rec.attempt}`,`Time started: ${rec.start}`,`Time ended: ${rec.end}`,`Status: ${rec.reason}`].forEach((s,i)=>x.fillText(s,20,100+i*24));
+ x.fillStyle='#b4541a';x.font='bold 40px Segoe UI';x.fillText(`SCORE: ${rec.score}/10`,20,300);
+ let y=340;rows.forEach(({l,k})=>{x.fillStyle='#3b2f20';x.font='15px Segoe UI';l.forEach(s=>{x.fillText(s,20,y);y+=20});x.font='bold 15px Segoe UI';x.fillStyle=k.ok?'#1b7a2f':'#b3261e';x.fillText(`   Your answer: ${k.s||'(none)'} ${k.ok?'✓':'✗'}    |    Answer key: ${k.a}`,20,y);y+=44});
+ x.save();x.translate(W/2,H/2);x.rotate(-.5);x.fillStyle='rgba(90,60,20,.10)';x.font='bold 54px sans-serif';for(let yy=-H;yy<H;yy+=200)for(let xx=-W;xx<W;xx+=520)x.fillText('RAYMOND D. ENTAL',xx,yy);x.restore();return c}
+/* ---------- admin ---------- */
+$('#adm').onclick=()=>{if(live)return;let p=prompt('Admin password:');if(p===null)return;if(p!==pw())return alert('Wrong password');$('#surl').value=localStorage.sheet||(/^https/.test(SHEET_URL)?SHEET_URL:'');show('adp');log();$('#adp').scrollIntoView({behavior:'smooth'})};
+$('#ssave').onclick=()=>{localStorage.sheet=$('#surl').value.trim();alert('Sheet link saved on this browser.')};
+$('#stest').onclick=()=>{localStorage.sheet=$('#surl').value.trim();send({start:ts(new Date()),end:ts(new Date()),ln:'TEST',fn:'Admin',mi:'R',sec:'Section 1A',em:'test@test.com',topic:'Test',attempt:0,score:0,reason:'Test row',keyText:'-'});alert('Test row sent. Check your Google Sheet.')};
+$('#psave').onclick=()=>{let v=$('#npw').value;if(v.length<4)return alert('Too short');localStorage.pw=v;$('#npw').value='';alert('Password changed.')};
+$('#clr').onclick=()=>{if(confirm('Clear local log?')){localStorage.log='[]';log()}};
+const log=()=>$('#lg').innerHTML='<tr><th>Ended</th><th>Student</th><th>Sec</th><th>Topic</th><th>Att</th><th>Score</th></tr>'+JSON.parse(localStorage.log||'[]').map(l=>`<tr><td>${l.end}</td><td>${l.n}<br>${l.em}</td><td>${l.sec}</td><td>${l.tp}</td><td>${l.att}</td><td>${l.sc}/10</td></tr>`).join('');
+</script></body></html>
