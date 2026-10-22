@@ -30,6 +30,12 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{border:1px solid 
 /* FIX: reduce lag while a quiz is running */
 body.quiz .scene,body.quiz:after{display:none}
 .card{transform:none!important}
+/* ANTI-SCREENSHOT */
+body.quiz #qz{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+body.quiz.shield #qz{filter:blur(22px);pointer-events:none}
+#wm{position:fixed;inset:0;z-index:50;pointer-events:none;display:none}
+body.quiz #wm{display:block}
+@media print{body *{display:none!important}body:before{content:"Printing is disabled.";display:block;font-size:28px;padding:40px}}
 </style></head><body>
 <div class="scene s1"><div class="cube"><i>7/8</i><i>0.75</i><i>x²</i><i>3/4</i><i>π</i><i>1/16</i></div></div>
 <div class="scene s2"><div class="cube"><i>R</i><i>Ø</i><i>3D</i><i>½</i><i>2.5</i><i>cm</i></div></div>
@@ -187,4 +193,44 @@ $('#stest').onclick=()=>{localStorage.sheet=$('#surl').value.trim();send({start:
 $('#psave').onclick=()=>{let v=$('#npw').value;if(v.length<4)return alert('Too short');localStorage.pw=v;$('#npw').value='';alert('Password changed.')};
 $('#clr').onclick=()=>{if(confirm('Clear local log?')){localStorage.log='[]';log()}};
 const log=()=>$('#lg').innerHTML='<tr><th>Ended</th><th>Student</th><th>Sec</th><th>Topic</th><th>Att</th><th>Score</th></tr>'+JSON.parse(localStorage.log||'[]').map(l=>`<tr><td>${l.end}</td><td>${l.n}<br>${l.em}</td><td>${l.sec}</td><td>${l.tp}</td><td>${l.att}</td><td>${l.sc}/10</td></tr>`).join('');
+
+/* ---------- ANTI-SCREENSHOT ---------- */
+(function(){
+ const B=document.body;
+ const shield=on=>B.classList.toggle('shield',!!on&&!!live);
+ let wm=document.createElement('div');wm.id='wm';B.appendChild(wm);
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function buildWm(){
+  if(!live)return;let u=live.u,txt=esc(`${u.ln}, ${u.fn} · ${u.em} · ${new Date().toLocaleString('en-PH')}`);
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" width="420" height="220"><text x="20" y="150" transform="rotate(-25 210 110)" font-family="Segoe UI,Arial" font-size="15" font-weight="700" fill="rgba(180,0,0,0.13)">${txt}</text></svg>`;
+  wm.style.backgroundImage=`url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+ }
+ /* build watermark when a quiz starts, hide when it ends */
+ new MutationObserver(()=>{if(B.classList.contains('quiz'))buildWm();else B.classList.remove('shield')})
+  .observe(B,{attributes:true,attributeFilter:['class']});
+ /* blur quiz when focus is lost */
+ window.addEventListener('blur',()=>{if(!dlg)shield(1)});
+ window.addEventListener('focus',()=>shield(0));
+ document.addEventListener('visibilitychange',()=>shield(document.hidden));
+ /* PrintScreen */
+ document.addEventListener('keyup',e=>{
+  if(e.key==='PrintScreen'||e.keyCode===44){
+   try{navigator.clipboard.writeText('Screenshots are disabled during the quiz.')}catch(_){}
+   shield(1);setTimeout(()=>shield(0),1500);
+  }
+ });
+ /* blocked shortcuts during a quiz */
+ document.addEventListener('keydown',e=>{
+  if(!live)return;
+  let k=(e.key||'').toLowerCase(),c=e.ctrlKey||e.metaKey,bad=
+   e.key==='PrintScreen'||e.key==='F12'||
+   (c&&['p','s','c','x','a','u'].includes(k))||
+   (c&&e.shiftKey&&['i','j','c','s','3','4','5'].includes(k))||
+   (e.metaKey&&e.shiftKey);
+  if(bad){e.preventDefault();e.stopPropagation();shield(1);setTimeout(()=>shield(0),1200)}
+ },true);
+ /* block copy / cut / drag / select during a quiz */
+ ['copy','cut','dragstart','selectstart'].forEach(ev=>document.addEventListener(ev,e=>{if(live)e.preventDefault()}));
+ window.addEventListener('beforeprint',()=>{if(live)shield(1)});
+})();
 </script></body></html>
