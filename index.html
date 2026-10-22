@@ -53,7 +53,7 @@ body.quiz #wm,body.quiz #wm2{display:block}
 <section class="grid" id="tops"></section>
 
 <section class="card" id="lec" hidden></section>
-<section class="card" id="qz" hidden><div id="warn"></div><div class="row" style="align-items:center"><b id="qh"></b></div><div id="qb"></div><button class="o" id="sub" style="width:100%">Submit Answers</button><p><small id="rules"></small></p></section>
+<section class="card" id="qz" hidden><div id="warn"></div><div class="row" style="align-items:center"><b id="qh"></b><b id="tm" style="text-align:right"></b></div><div id="qb"></div><button class="o" id="sub" style="width:100%">Submit Answers</button><p><small id="rules"></small></p></section>
 <section class="card" id="res" hidden></section>
 
 <section class="card" id="adp" hidden>
@@ -72,10 +72,11 @@ body.quiz #wm,body.quiz #wm2{display:block}
 const SHEET_URL="https://script.google.com/macros/s/AKfycbw9AUBfHwsVuOYWGNwclcw-x81gQlE2BD1rHRI_772QfsNrTVExw2Ci-fBBzzn__Gnt/exec";   // <<<<<<<<<< YOUR SHEET LINK (replace here if you redeploy)
 /* (You can also paste it later in Admin Panel → box ①) */
 
-/* ═══ ANTI-CHEATING SETTING (change this number) ═══
+/* ═══ ANTI-CHEATING SETTINGS (change these numbers) ═══
    MAX_STRIKES = 2  → 1st time leaving the tab = warning, 2nd time = auto-submit
-   MAX_STRIKES = 1  → strict: auto-submit on the first time leaving the tab   */
-const MAX_STRIKES=2;
+   MAX_STRIKES = 1  → strict: auto-submit on the first time leaving the tab
+   QUIZ_MINUTES     → time limit per quiz (auto-submit when time is up)            */
+const MAX_STRIKES=2, QUIZ_MINUTES=20;
 
 const $=s=>document.querySelector(s),ts=d=>d.toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'medium'});
 const url=()=>localStorage.sheet||SHEET_URL, pw=()=>localStorage.pw||'RDDE_2026';
@@ -162,7 +163,7 @@ $('#tops').innerHTML=T.map((x,i)=>`<div class="card tc" data-i="${i}"><small>${x
 /* ---------- state ---------- */
 let cur,Q,live=0,t0,iv,dlg=0,flags=0,strikes=0,vlog=[],hideAt=0,picData='',picName='',picPending=0;
 const TAB=Math.random().toString(36).slice(2),LOCKMS=20000;
-const rulesText=()=>'⚠ ANTI-CHEATING ON: '+(MAX_STRIKES>1?`Leaving this tab or app gives ${MAX_STRIKES-1} warning${MAX_STRIKES>2?'s':''}; the next time your quiz is auto-submitted. `:'Leaving this tab or app auto-submits your quiz immediately. ')+'Refreshing, closing, the Back button and opening a second tab are recorded. Screenshots and photos are not allowed: every quiz screen carries your name, email and time as a watermark.';
+const rulesText=()=>`⚠ ANTI-CHEATING ON: Time limit ${QUIZ_MINUTES} minutes. `+(MAX_STRIKES>1?`Leaving this tab or app gives ${MAX_STRIKES-1} warning${MAX_STRIKES>2?'s':''}; the next time your quiz is auto-submitted. `:'Leaving this tab or app auto-submits your quiz immediately. ')+'Refreshing, closing, the Back button and opening a second tab are recorded. Screenshots and photos are not allowed: every quiz screen carries your name, email and time as a watermark.';
 const info=()=>{let v=i=>$('#'+i).value.trim(),o={ln:v('ln'),fn:v('fn'),mi:v('mi').toUpperCase().replace('.',''),sec:v('sec'),em:v('em').toLowerCase()};o.ok=!!(o.ln&&o.fn&&o.mi&&o.sec&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(o.em));return o};
 const show=id=>['lec','qz','res','adp'].forEach(x=>$('#'+x).hidden=x!=id);
 $('#tops').onclick=e=>{let c=e.target.closest('.tc');if(!c||live)return;cur=T[c.dataset.i];$('#lec').innerHTML=`<h2>${cur.t} <small>(${cur.u})</small></h2>${cur.l}<p><a href="${yt('machinist math '+cur.v)}" target="_blank">▶ Watch the lecture video(s) on YouTube</a></p><p><small>${rulesText()}</small></p><button id="go" class="o">Start Quiz (10 items)</button>`;show('lec');$('#lec').scrollIntoView({behavior:'smooth'});$('#go').onclick=start};
@@ -203,8 +204,13 @@ function start(){let u=info();if(!u.ok)return alert('Complete last name, first n
  $('#warn').style.display='none';$('#rules').textContent=rulesText();
  $('#qh').textContent=`${cur.t} — Attempt ${att}`;$('#qb').innerHTML=Q.map((q,i)=>`<div class="q"><b>${i+1}.</b> ${q.q}<div class="o">${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}</div></div>`).join('');
  show('qz');
- /* no visible timer: this only keeps the "quiz is open" marker fresh for the one-tab check */
- iv=setInterval(()=>{localStorage.qlock=TAB+'|'+Date.now()},1000)}
+ const tick=()=>{
+  let s=Math.floor((Date.now()-t0)/1000),left=QUIZ_MINUTES*60-s;
+  if(left<=0)return finish('Time is up: auto-submitted');
+  $('#tm').textContent=`⏱ ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')} left`;
+  localStorage.qlock=TAB+'|'+Date.now();
+ };
+ tick();iv=setInterval(tick,1000)}
 
 /* leaving the tab / window */
 document.addEventListener('visibilitychange',()=>{
