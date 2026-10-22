@@ -36,6 +36,8 @@ body.quiz.shield #qz{filter:blur(24px);pointer-events:none}
 #wm,#wm2{position:fixed;inset:0;z-index:50;pointer-events:none;display:none}
 body.quiz #wm,body.quiz #wm2{display:block}
 @media print{body *{display:none!important}body:before{content:"Printing is disabled.";display:block;font-size:28px;padding:40px}}
+/* ANTI-CHEATING warning banner */
+#warn{display:none;position:sticky;top:0;z-index:60;background:#b3261e;color:#fff;padding:10px 12px;border-radius:8px;font-weight:700;margin:8px 0;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 </style></head><body>
 <div class="scene s1"><div class="cube"><i>7/8</i><i>0.75</i><i>x²</i><i>3/4</i><i>π</i><i>1/16</i></div></div>
 <div class="scene s2"><div class="cube"><i>R</i><i>Ø</i><i>3D</i><i>½</i><i>2.5</i><i>cm</i></div></div>
@@ -49,7 +51,7 @@ body.quiz #wm,body.quiz #wm2{display:block}
 <section class="grid" id="tops"></section>
 
 <section class="card" id="lec" hidden></section>
-<section class="card" id="qz" hidden><div class="row" style="align-items:center"><b id="qh"></b><b id="tm" style="text-align:right"></b></div><div id="qb"></div><button class="o" id="sub" style="width:100%">Submit Answers</button><p><small>⚠ Opening another tab or window closes and auto-submits this quiz. Screenshots and photos are not allowed: every quiz screen carries your name, email and time as a watermark, and screenshot attempts are recorded.</small></p></section>
+<section class="card" id="qz" hidden><div id="warn"></div><div class="row" style="align-items:center"><b id="qh"></b><b id="tm" style="text-align:right"></b></div><div id="qb"></div><button class="o" id="sub" style="width:100%">Submit Answers</button><p><small id="rules"></small></p></section>
 <section class="card" id="res" hidden></section>
 
 <section class="card" id="adp" hidden>
@@ -67,6 +69,12 @@ body.quiz #wm,body.quiz #wm2{display:block}
    ╚══════════════════════════════════════════════════════════════╝ */
 const SHEET_URL="https://script.google.com/macros/s/AKfycbw9AUBfHwsVuOYWGNwclcw-x81gQlE2BD1rHRI_772QfsNrTVExw2Ci-fBBzzn__Gnt/exec";   // <<<<<<<<<< YOUR SHEET LINK (replace here if you redeploy)
 /* (You can also paste it later in Admin Panel → box ①) */
+
+/* ═══ ANTI-CHEATING SETTINGS (change these numbers) ═══
+   MAX_STRIKES = 2  → 1st time leaving the tab = warning, 2nd time = auto-submit
+   MAX_STRIKES = 1  → strict: auto-submit on the first time leaving the tab
+   QUIZ_MINUTES     → time limit per quiz (auto-submit when time is up)            */
+const MAX_STRIKES=2, QUIZ_MINUTES=20;
 
 const $=s=>document.querySelector(s),ts=d=>d.toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'medium'});
 const url=()=>localStorage.sheet||SHEET_URL, pw=()=>localStorage.pw||'RDDE_2026';
@@ -151,25 +159,82 @@ const T=[
 {k:'E',t:'Powers & Formulas',u:'Unit 13',v:'powers exponents area volume formulas machinist math',l:'<ul><li>Power = repeated factor; 5³ = 5×5×5 = 125.</li><li>(a/b)² squares both terms; a/b² squares only the denominator.</li><li>Do powers first, then × ÷, then + −.</li><li>Square A = s²; cube V = s³; circle A = πr²; cylinder V = πr²h (π = 3.14); cone V = 0.2618 D² H.</li></ul><i>AutoCAD link: AREA and MASSPROP return areas/volumes you can verify.</i>'}];
 $('#tops').innerHTML=T.map((x,i)=>`<div class="card tc" data-i="${i}"><small>${x.u}</small><br><b>${x.t}</b><br>10 unique items</div>`).join('');
 /* ---------- state ---------- */
-let cur,Q,live=0,t0,iv,dlg=0,flags=0;
+let cur,Q,live=0,t0,iv,dlg=0,flags=0,strikes=0,vlog=[],hideAt=0;
+const TAB=Math.random().toString(36).slice(2),LOCKMS=20000;
+const rulesText=()=>`⚠ ANTI-CHEATING ON: Time limit ${QUIZ_MINUTES} minutes. `+(MAX_STRIKES>1?`Leaving this tab or app gives ${MAX_STRIKES-1} warning${MAX_STRIKES>2?'s':''}; the next time your quiz is auto-submitted. `:'Leaving this tab or app auto-submits your quiz immediately. ')+'Refreshing, closing, the Back button and opening a second tab are recorded. Screenshots and photos are not allowed: every quiz screen carries your name, email and time as a watermark.';
 const info=()=>{let v=i=>$('#'+i).value.trim(),o={ln:v('ln'),fn:v('fn'),mi:v('mi').toUpperCase().replace('.',''),sec:v('sec'),em:v('em').toLowerCase()};o.ok=!!(o.ln&&o.fn&&o.mi&&o.sec&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(o.em));return o};
 const show=id=>['lec','qz','res','adp'].forEach(x=>$('#'+x).hidden=x!=id);
-$('#tops').onclick=e=>{let c=e.target.closest('.tc');if(!c||live)return;cur=T[c.dataset.i];$('#lec').innerHTML=`<h2>${cur.t} <small>(${cur.u})</small></h2>${cur.l}<p><a href="${yt('machinist math '+cur.v)}" target="_blank">▶ Watch the lecture video(s) on YouTube</a></p><button id="go" class="o">Start Quiz (10 items)</button>`;show('lec');$('#lec').scrollIntoView({behavior:'smooth'});$('#go').onclick=start};
+$('#tops').onclick=e=>{let c=e.target.closest('.tc');if(!c||live)return;cur=T[c.dataset.i];$('#lec').innerHTML=`<h2>${cur.t} <small>(${cur.u})</small></h2>${cur.l}<p><a href="${yt('machinist math '+cur.v)}" target="_blank">▶ Watch the lecture video(s) on YouTube</a></p><p><small>${rulesText()}</small></p><button id="go" class="o">Start Quiz (10 items)</button>`;show('lec');$('#lec').scrollIntoView({behavior:'smooth'});$('#go').onclick=start};
+
+/* ---------- ANTI-CHEATING: violations ---------- */
+const lastV={};
+function warn(msg){const w=$('#warn');w.textContent=msg;w.style.display='block'}
+function violate(msg,strike=true){
+ if(!live)return;
+ const now=Date.now();if(now-(lastV[msg]||0)<1500)return;lastV[msg]=now;
+ vlog.push(`${msg} @${new Date().toLocaleTimeString('en-PH')}`);
+ if(!strike)return;
+ strikes++;
+ if(strikes>=MAX_STRIKES)return finish('Auto-submitted: '+msg);
+ warn(`⚠ WARNING ${strikes} of ${MAX_STRIKES-1}: ${msg}. If it happens again, your quiz will be auto-submitted.`);
+}
 function start(){let u=info();if(!u.ok)return alert('Complete last name, first name, M.I., section and a valid email first.');
+ /* only one quiz tab at a time */
+ const lk=(localStorage.qlock||'').split('|');
+ if(lk[0]&&lk[0]!==TAB&&Date.now()-(+lk[1]||0)<LOCKMS)return alert('This quiz is already open in another tab or window. Close that one first.');
  let key='att:'+u.em+cur.k,att=(+localStorage[key]||0)+1;localStorage[key]=att;
  r=RNG(H([u.ln,u.fn,u.mi,u.em,cur.k,att].join('|').toLowerCase()));Q=G[cur.k].map(f=>f());
- flags=0;live={u,att};document.body.classList.add('quiz');t0=new Date();['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=true);
+ flags=0;strikes=0;vlog=[];hideAt=0;for(const k in lastV)delete lastV[k];
+ live={u,att};document.body.classList.add('quiz');t0=new Date();['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=true);
+ localStorage.qactive=JSON.stringify({start:ts(t0),ln:u.ln,fn:u.fn,mi:u.mi,sec:u.sec,em:u.em,topic:cur.t,attempt:att});
+ localStorage.qlock=TAB+'|'+Date.now();
+ try{history.pushState({q:1},'')}catch(_){}
+ $('#warn').style.display='none';$('#rules').textContent=rulesText();
  $('#qh').textContent=`${cur.t} — Attempt ${att}`;$('#qb').innerHTML=Q.map((q,i)=>`<div class="q"><b>${i+1}.</b> ${q.q}<div class="o">${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}</div></div>`).join('');
- show('qz');iv=setInterval(()=>{let s=Math.floor((Date.now()-t0)/1000);$('#tm').textContent=`⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`},1000)}
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&live)finish('Closed: student left the tab')});
+ show('qz');
+ const tick=()=>{
+  let s=Math.floor((Date.now()-t0)/1000),left=QUIZ_MINUTES*60-s;
+  if(left<=0)return finish('Time is up: auto-submitted');
+  $('#tm').textContent=`⏱ ${Math.floor(left/60)}:${String(left%60).padStart(2,'0')} left`;
+  localStorage.qlock=TAB+'|'+Date.now();
+ };
+ tick();iv=setInterval(tick,1000)}
+
+/* leaving the tab / window */
+document.addEventListener('visibilitychange',()=>{
+ if(!live)return;
+ if(document.hidden){hideAt=Date.now();violate('Left the quiz tab/window')}
+ else if(hideAt){vlog.push(`(away ${Math.round((Date.now()-hideAt)/1000)}s)`);hideAt=0}
+});
 /* FIX: ignore blur while the "Submit anyway?" box is open */
-window.addEventListener('blur',()=>{if(live&&!dlg)finish('Closed: student left the tab')});
+window.addEventListener('blur',()=>{if(live&&!dlg)violate('Left the quiz tab/window')});
 document.addEventListener('contextmenu',e=>{if(live)e.preventDefault()});
+/* refresh / close warning, Back button */
+window.addEventListener('beforeunload',e=>{if(live){e.preventDefault();e.returnValue=''}});
+window.addEventListener('pagehide',e=>{if(live&&!e.persisted)localStorage.removeItem('qlock')});
+window.addEventListener('popstate',()=>{if(live){try{history.pushState({q:1},'')}catch(_){}violate('Pressed the Back button',false)}});
+/* copy / cut attempts are logged */
+['copy','cut'].forEach(ev=>document.addEventListener(ev,()=>violate('Tried to copy text',false)));
+/* developer tools / side panel (computers only) */
+(function(){
+ const touch='ontouchstart' in window||navigator.maxTouchPoints>0;let open=0;
+ setInterval(()=>{
+  if(!live||touch)return;
+  if(window.outerWidth-window.innerWidth>200||window.outerHeight-window.innerHeight>260){if(!open){open=1;violate('Developer tools/side panel opened',false)}}else open=0;
+ },2000);
+})();
+
 $('#sub').onclick=()=>{let un=Q.filter((_,i)=>!document.querySelector(`input[name=q${i}]:checked`)).length;
  dlg=1;let ok=!un||confirm(un+' item(s) unanswered. Submit anyway?');dlg=0;
  if(ok)finish('Submitted')};
 function finish(reason){if(!live)return;let {u,att}=live;live=0;document.body.classList.remove('quiz');clearInterval(iv);let end=new Date();
+ const secs=Math.round((end-t0)/1000);
  if(flags){reason+=` | Screenshot-attempt signals: ${flags}`;flags=0}
+ if(vlog.length){reason+=` | Violations: ${vlog.join('; ')}`}
+ if(secs<60)reason+=` | Very fast completion (${secs}s)`;
+ vlog=[];strikes=0;hideAt=0;
+ localStorage.removeItem('qactive');localStorage.removeItem('qlock');
+ $('#warn').style.display='none';
  let key=Q.map((q,i)=>{let c=document.querySelector(`input[name=q${i}]:checked`),s=c?q.o[+c.value]:'';return{n:i+1,q:q.q,a:q.a,s,ok:s===q.a}}),sc=key.filter(k=>k.ok).length;
  let rec={start:ts(t0),end:ts(end),ln:u.ln,fn:u.fn,mi:u.mi,sec:u.sec,em:u.em,topic:cur.t,attempt:att,score:sc,reason,key,keyText:key.map(k=>`${k.n}) ${k.s||'-'} | ${k.a} ${k.ok?'✓':'✗'}`).join('; ')};
  ['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=false);
@@ -183,7 +248,8 @@ function img(rec){const W=900,c=document.createElement('canvas'),x=c.getContext(
  const rows=rec.key.map(k=>({l:wrap(`${k.n}. ${k.q}`,840,'15px Segoe UI'),k})),H=320+rows.reduce((s,r)=>s+r.l.length*20+44,0);c.width=W;c.height=H;
  x.fillStyle='#f6efdc';x.fillRect(0,0,W,H);x.strokeStyle='rgba(31,78,121,.12)';for(let i=0;i<W;i+=30){x.beginPath();x.moveTo(i,0);x.lineTo(i,H);x.stroke()}for(let j=0;j<H;j+=30){x.beginPath();x.moveTo(0,j);x.lineTo(W,j);x.stroke()}
  x.fillStyle='#1f4e79';x.fillRect(0,0,W,70);x.fillStyle='#fff';x.font='bold 26px Segoe UI';x.fillText('BASIC MATH MODULE — RESULT',20,44);
- x.fillStyle='#3b2f20';x.font='16px Segoe UI';[`Name: ${rec.ln}, ${rec.fn} ${rec.mi}.   ${rec.sec}`,`Email: ${rec.em}`,`Topic: ${rec.topic}`,`Attempt No.: ${rec.attempt}`,`Time started: ${rec.start}`,`Time ended: ${rec.end}`,`Status: ${rec.reason}`].forEach((s,i)=>x.fillText(s,20,100+i*24));
+ const st=rec.reason.length>90?rec.reason.slice(0,90)+'…':rec.reason;
+ x.fillStyle='#3b2f20';x.font='16px Segoe UI';[`Name: ${rec.ln}, ${rec.fn} ${rec.mi}.   ${rec.sec}`,`Email: ${rec.em}`,`Topic: ${rec.topic}`,`Attempt No.: ${rec.attempt}`,`Time started: ${rec.start}`,`Time ended: ${rec.end}`,`Status: ${st}`].forEach((s,i)=>x.fillText(s,20,100+i*24));
  x.fillStyle='#b4541a';x.font='bold 40px Segoe UI';x.fillText(`SCORE: ${rec.score}/10`,20,300);
  let y=340;rows.forEach(({l,k})=>{x.fillStyle='#3b2f20';x.font='15px Segoe UI';l.forEach(s=>{x.fillText(s,20,y);y+=20});x.font='bold 15px Segoe UI';x.fillStyle=k.ok?'#1b7a2f':'#b3261e';x.fillText(`   Your answer: ${k.s||'(none)'} ${k.ok?'✓':'✗'}    |    Answer key: ${k.a}`,20,y);y+=44});
  x.save();x.translate(W/2,H/2);x.rotate(-.5);x.fillStyle='rgba(90,60,20,.10)';x.font='bold 54px sans-serif';for(let yy=-H;yy<H;yy+=200)for(let xx=-W;xx<W;xx+=520)x.fillText('RAYMOND D. ENTAL',xx,yy);x.restore();return c}
@@ -193,7 +259,19 @@ $('#ssave').onclick=()=>{localStorage.sheet=$('#surl').value.trim();alert('Sheet
 $('#stest').onclick=()=>{localStorage.sheet=$('#surl').value.trim();send({start:ts(new Date()),end:ts(new Date()),ln:'TEST',fn:'Admin',mi:'R',sec:'Section 1A',em:'test@test.com',topic:'Test',attempt:0,score:0,reason:'Test row',keyText:'-'});alert('Test row sent. Check your Google Sheet.')};
 $('#psave').onclick=()=>{let v=$('#npw').value;if(v.length<4)return alert('Too short');localStorage.pw=v;$('#npw').value='';alert('Password changed.')};
 $('#clr').onclick=()=>{if(confirm('Clear local log?')){localStorage.log='[]';log()}};
-const log=()=>$('#lg').innerHTML='<tr><th>Ended</th><th>Student</th><th>Sec</th><th>Topic</th><th>Att</th><th>Score</th></tr>'+JSON.parse(localStorage.log||'[]').map(l=>`<tr><td>${l.end}</td><td>${l.n}<br>${l.em}</td><td>${l.sec}</td><td>${l.tp}</td><td>${l.att}</td><td>${l.sc}/10</td></tr>`).join('');
+const log=()=>$('#lg').innerHTML='<tr><th>Ended</th><th>Student</th><th>Sec</th><th>Topic</th><th>Att</th><th>Score</th><th>Notes</th></tr>'+JSON.parse(localStorage.log||'[]').map(l=>`<tr><td>${l.end}</td><td>${l.n}<br>${l.em}</td><td>${l.sec}</td><td>${l.tp}</td><td>${l.att}</td><td>${l.sc}/10</td><td>${l.reason||''}</td></tr>`).join('');
+
+/* ---------- ANTI-CHEATING: report an abandoned quiz (refreshed/closed mid-quiz) ---------- */
+(function(){
+ let a=null;try{a=JSON.parse(localStorage.qactive||'null')}catch(_){}
+ if(!a)return;
+ const lk=(localStorage.qlock||'').split('|');
+ if(lk[0]&&Date.now()-(+lk[1]||0)<LOCKMS)return; /* a quiz tab is still alive */
+ const rec=Object.assign({},a,{end:ts(new Date()),score:0,reason:'Abandoned: page was refreshed/closed during the quiz',keyText:'-'});
+ send(rec);
+ let lg=JSON.parse(localStorage.log||'[]');lg.push({end:rec.end,n:`${a.ln}, ${a.fn} ${a.mi}.`,sec:a.sec,em:a.em,tp:a.topic,att:a.attempt,sc:0,reason:rec.reason});localStorage.log=JSON.stringify(lg);
+ localStorage.removeItem('qactive');localStorage.removeItem('qlock');
+})();
 
 /* ---------- ANTI-SCREENSHOT (desktop + mobile + hardware buttons) ---------- */
 (function(){
@@ -253,7 +331,6 @@ const log=()=>$('#lg').innerHTML='<tr><th>Ended</th><th>Student</th><th>Sec</th>
  ['keydown','keyup'].forEach(ev=>window.addEventListener(ev,hw,true));
 
  /* ---- MOBILE touch methods ---- */
- /* 3+ finger gestures and palm-swipe (huge touch area) */
  const bigTouch=e=>Array.from(e.touches||[]).some(t=>(t.radiusX||0)>55||(t.radiusY||0)>55);
  const multi=e=>{
   if(!live)return;
@@ -261,20 +338,16 @@ const log=()=>$('#lg').innerHTML='<tr><th>Ended</th><th>Student</th><th>Sec</th>
  };
  document.addEventListener('touchstart',multi,{passive:false,capture:true});
  document.addEventListener('touchmove',multi,{passive:false,capture:true});
- /* the phone cancels the touch when the system takes over (palm swipe / system gesture) */
  document.addEventListener('touchcancel',()=>{if(live)alarm(3000)},true);
- /* pinch / zoom / double-tap */
  ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>{if(live){e.preventDefault();shield(1,1500)}}));
  let lastTap=0;
  document.addEventListener('touchend',e=>{
   if(!live)return;
   const now=Date.now();if(now-lastTap<300)e.preventDefault();lastTap=now;
  },{passive:false});
- /* rotation / split-screen / window resize (width change only, so scrolling is not affected) */
  let lastW=window.innerWidth;
  window.addEventListener('resize',()=>{if(live&&Math.abs(window.innerWidth-lastW)>40)shield(1,1800);lastW=window.innerWidth});
  window.addEventListener('orientationchange',()=>{if(live)shield(1,1800)});
- /* long-press / image-save menu */
  document.addEventListener('contextmenu',e=>{if(live){e.preventDefault();shield(1,800)}});
 
  /* ---- DESKTOP ---- */
