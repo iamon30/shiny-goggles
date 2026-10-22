@@ -30,7 +30,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{border:1px solid 
 /* FIX: reduce lag while a quiz is running */
 body.quiz .scene,body.quiz:after{display:none}
 .card{transform:none!important}
-/* ANTI-SCREENSHOT (desktop + mobile + buttons) */
+/* ANTI-SCREENSHOT (desktop + mobile) */
 body.quiz #qz{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:pan-y}
 body.quiz.shield #qz{filter:blur(24px);pointer-events:none}
 #wm,#wm2{position:fixed;inset:0;z-index:50;pointer-events:none;display:none}
@@ -49,7 +49,7 @@ body.quiz #wm,body.quiz #wm2{display:block}
 <section class="grid" id="tops"></section>
 
 <section class="card" id="lec" hidden></section>
-<section class="card" id="qz" hidden><div class="row" style="align-items:center"><b id="qh"></b><b id="tm" style="text-align:right"></b></div><div id="qb"></div><button class="o" id="sub" style="width:100%">Submit Answers</button><p><small>⚠ Opening another tab or window closes and auto-submits this quiz. Screenshots and photos are not allowed: every quiz screen carries your name, email and time as a watermark, and screenshot attempts are recorded.</small></p></section>
+<section class="card" id="qz" hidden><div class="row" style="align-items:center"><b id="qh"></b><b id="tm" style="text-align:right"></b></div><div id="qb"></div><button class="o" id="sub" style="width:100%">Submit Answers</button><p><small>⚠ Opening another tab or window closes and auto-submits this quiz. Screenshots and photos are not allowed: every quiz screen carries your name, email and time as a watermark.</small></p></section>
 <section class="card" id="res" hidden></section>
 
 <section class="card" id="adp" hidden>
@@ -151,14 +151,130 @@ const T=[
 {k:'E',t:'Powers & Formulas',u:'Unit 13',v:'powers exponents area volume formulas machinist math',l:'<ul><li>Power = repeated factor; 5³ = 5×5×5 = 125.</li><li>(a/b)² squares both terms; a/b² squares only the denominator.</li><li>Do powers first, then × ÷, then + −.</li><li>Square A = s²; cube V = s³; circle A = πr²; cylinder V = πr²h (π = 3.14); cone V = 0.2618 D² H.</li></ul><i>AutoCAD link: AREA and MASSPROP return areas/volumes you can verify.</i>'}];
 $('#tops').innerHTML=T.map((x,i)=>`<div class="card tc" data-i="${i}"><small>${x.u}</small><br><b>${x.t}</b><br>10 unique items</div>`).join('');
 /* ---------- state ---------- */
-let cur,Q,live=0,t0,iv,dlg=0,flags=0;
+let cur,Q,live=0,t0,iv,dlg=0;
 const info=()=>{let v=i=>$('#'+i).value.trim(),o={ln:v('ln'),fn:v('fn'),mi:v('mi').toUpperCase().replace('.',''),sec:v('sec'),em:v('em').toLowerCase()};o.ok=!!(o.ln&&o.fn&&o.mi&&o.sec&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(o.em));return o};
 const show=id=>['lec','qz','res','adp'].forEach(x=>$('#'+x).hidden=x!=id);
 $('#tops').onclick=e=>{let c=e.target.closest('.tc');if(!c||live)return;cur=T[c.dataset.i];$('#lec').innerHTML=`<h2>${cur.t} <small>(${cur.u})</small></h2>${cur.l}<p><a href="${yt('machinist math '+cur.v)}" target="_blank">▶ Watch the lecture video(s) on YouTube</a></p><button id="go" class="o">Start Quiz (10 items)</button>`;show('lec');$('#lec').scrollIntoView({behavior:'smooth'});$('#go').onclick=start};
 function start(){let u=info();if(!u.ok)return alert('Complete last name, first name, M.I., section and a valid email first.');
  let key='att:'+u.em+cur.k,att=(+localStorage[key]||0)+1;localStorage[key]=att;
  r=RNG(H([u.ln,u.fn,u.mi,u.em,cur.k,att].join('|').toLowerCase()));Q=G[cur.k].map(f=>f());
- flags=0;live={u,att};document.body.classList.add('quiz');t0=new Date();['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=true);
+ live={u,att};document.body.classList.add('quiz');t0=new Date();['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=true);
  $('#qh').textContent=`${cur.t} — Attempt ${att}`;$('#qb').innerHTML=Q.map((q,i)=>`<div class="q"><b>${i+1}.</b> ${q.q}<div class="o">${q.o.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}</div></div>`).join('');
  show('qz');iv=setInterval(()=>{let s=Math.floor((Date.now()-t0)/1000);$('#tm').textContent=`⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`},1000)}
-document.addEventListener('
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&live)finish('Closed: student left the tab')});
+/* FIX: ignore blur while the "Submit anyway?" box is open */
+window.addEventListener('blur',()=>{if(live&&!dlg)finish('Closed: student left the tab')});
+document.addEventListener('contextmenu',e=>{if(live)e.preventDefault()});
+$('#sub').onclick=()=>{let un=Q.filter((_,i)=>!document.querySelector(`input[name=q${i}]:checked`)).length;
+ dlg=1;let ok=!un||confirm(un+' item(s) unanswered. Submit anyway?');dlg=0;
+ if(ok)finish('Submitted')};
+function finish(reason){if(!live)return;let {u,att}=live;live=0;document.body.classList.remove('quiz');clearInterval(iv);let end=new Date();
+ let key=Q.map((q,i)=>{let c=document.querySelector(`input[name=q${i}]:checked`),s=c?q.o[+c.value]:'';return{n:i+1,q:q.q,a:q.a,s,ok:s===q.a}}),sc=key.filter(k=>k.ok).length;
+ let rec={start:ts(t0),end:ts(end),ln:u.ln,fn:u.fn,mi:u.mi,sec:u.sec,em:u.em,topic:cur.t,attempt:att,score:sc,reason,key,keyText:key.map(k=>`${k.n}) ${k.s||'-'} | ${k.a} ${k.ok?'✓':'✗'}`).join('; ')};
+ ['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=false);
+ let c=img(rec);c.toBlob(b=>{let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`${u.ln}_${u.fn}_${cur.k}_attempt${att}.png`;a.click()});
+ let lg=JSON.parse(localStorage.log||'[]');lg.push({end:rec.end,n:`${u.ln}, ${u.fn} ${u.mi}.`,sec:u.sec,em:u.em,tp:cur.t,att,sc,reason});localStorage.log=JSON.stringify(lg);
+ send(rec);
+ $('#res').innerHTML=`<h2>Score: ${sc}/10 <small>(Attempt ${att})</small></h2><p>${reason}<br>Start: ${rec.start}<br>End: ${rec.end}</p>${key.map(k=>`<p><b>${k.n}.</b> ${k.q}<br><span class="${k.ok?'ok':'no'}">Your answer: ${k.s||'(none)'} ${k.ok?'✓':'✗'}</span> — Answer key: <b>${k.a}</b></p>`).join('')}<p>Result picture downloaded automatically.</p>`;show('res')}
+function send(rec){let u=url();if(/^https:\/\/script\.google\.com\//.test(u))fetch(u,{method:'POST',mode:'no-cors',body:JSON.stringify(rec)}).catch(()=>{})}
+function img(rec){const W=900,c=document.createElement('canvas'),x=c.getContext('2d');
+ const wrap=(s,w,f)=>{x.font=f;let L=[],l='';for(const wd of s.split(' ')){let n=l?l+' '+wd:wd;if(x.measureText(n).width>w&&l){L.push(l);l=wd}else l=n}L.push(l);return L};
+ const rows=rec.key.map(k=>({l:wrap(`${k.n}. ${k.q}`,840,'15px Segoe UI'),k})),H=320+rows.reduce((s,r)=>s+r.l.length*20+44,0);c.width=W;c.height=H;
+ x.fillStyle='#f6efdc';x.fillRect(0,0,W,H);x.strokeStyle='rgba(31,78,121,.12)';for(let i=0;i<W;i+=30){x.beginPath();x.moveTo(i,0);x.lineTo(i,H);x.stroke()}for(let j=0;j<H;j+=30){x.beginPath();x.moveTo(0,j);x.lineTo(W,j);x.stroke()}
+ x.fillStyle='#1f4e79';x.fillRect(0,0,W,70);x.fillStyle='#fff';x.font='bold 26px Segoe UI';x.fillText('BASIC MATH MODULE — RESULT',20,44);
+ x.fillStyle='#3b2f20';x.font='16px Segoe UI';[`Name: ${rec.ln}, ${rec.fn} ${rec.mi}.   ${rec.sec}`,`Email: ${rec.em}`,`Topic: ${rec.topic}`,`Attempt No.: ${rec.attempt}`,`Time started: ${rec.start}`,`Time ended: ${rec.end}`,`Status: ${rec.reason}`].forEach((s,i)=>x.fillText(s,20,100+i*24));
+ x.fillStyle='#b4541a';x.font='bold 40px Segoe UI';x.fillText(`SCORE: ${rec.score}/10`,20,300);
+ let y=340;rows.forEach(({l,k})=>{x.fillStyle='#3b2f20';x.font='15px Segoe UI';l.forEach(s=>{x.fillText(s,20,y);y+=20});x.font='bold 15px Segoe UI';x.fillStyle=k.ok?'#1b7a2f':'#b3261e';x.fillText(`   Your answer: ${k.s||'(none)'} ${k.ok?'✓':'✗'}    |    Answer key: ${k.a}`,20,y);y+=44});
+ x.save();x.translate(W/2,H/2);x.rotate(-.5);x.fillStyle='rgba(90,60,20,.10)';x.font='bold 54px sans-serif';for(let yy=-H;yy<H;yy+=200)for(let xx=-W;xx<W;xx+=520)x.fillText('RAYMOND D. ENTAL',xx,yy);x.restore();return c}
+/* ---------- admin ---------- */
+$('#adm').onclick=()=>{if(live)return;let p=prompt('Admin password:');if(p===null)return;if(p!==pw())return alert('Wrong password');$('#surl').value=localStorage.sheet||(/^https/.test(SHEET_URL)?SHEET_URL:'');show('adp');log();$('#adp').scrollIntoView({behavior:'smooth'})};
+$('#ssave').onclick=()=>{localStorage.sheet=$('#surl').value.trim();alert('Sheet link saved on this browser.')};
+$('#stest').onclick=()=>{localStorage.sheet=$('#surl').value.trim();send({start:ts(new Date()),end:ts(new Date()),ln:'TEST',fn:'Admin',mi:'R',sec:'Section 1A',em:'test@test.com',topic:'Test',attempt:0,score:0,reason:'Test row',keyText:'-'});alert('Test row sent. Check your Google Sheet.')};
+$('#psave').onclick=()=>{let v=$('#npw').value;if(v.length<4)return alert('Too short');localStorage.pw=v;$('#npw').value='';alert('Password changed.')};
+$('#clr').onclick=()=>{if(confirm('Clear local log?')){localStorage.log='[]';log()}};
+const log=()=>$('#lg').innerHTML='<tr><th>Ended</th><th>Student</th><th>Sec</th><th>Topic</th><th>Att</th><th>Score</th></tr>'+JSON.parse(localStorage.log||'[]').map(l=>`<tr><td>${l.end}</td><td>${l.n}<br>${l.em}</td><td>${l.sec}</td><td>${l.tp}</td><td>${l.att}</td><td>${l.sc}/10</td></tr>`).join('');
+
+/* ---------- ANTI-SCREENSHOT (desktop + mobile) ---------- */
+(function(){
+ const B=document.body;
+ let hideTimer=0;
+ const shield=(on,ms)=>{
+  B.classList.toggle('shield',!!on&&!!live);
+  clearTimeout(hideTimer);
+  if(on&&ms)hideTimer=setTimeout(()=>B.classList.remove('shield'),ms);
+ };
+ /* two watermark layers */
+ const wm=document.createElement('div');wm.id='wm';B.appendChild(wm);
+ const wm2=document.createElement('div');wm2.id='wm2';B.appendChild(wm2);
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function tile(txt,w,h,rot,size,alpha,x,y){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><text x="${x}" y="${y}" transform="rotate(${rot} ${w/2} ${h/2})" font-family="Segoe UI,Arial,sans-serif" font-size="${size}" font-weight="700" fill="rgba(190,0,0,${alpha})">${txt}</text></svg>`;
+  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+ }
+ function buildWm(){
+  if(!live)return;
+  const u=live.u,txt=esc(`${u.ln}, ${u.fn} · ${u.em} · ${new Date().toLocaleString('en-PH')}`),
+        short=esc(`${u.ln} ${u.em}`);
+  wm.style.backgroundImage=tile(txt,380,170,-25,14,.17,10,95);
+  wm2.style.backgroundImage=tile(short,260,120,20,13,.13,10,70);
+ }
+ let mv=0;
+ function moveWm(){
+  mv++;
+  wm.style.backgroundPosition=((mv*37)%160)+'px '+((mv*53)%120)+'px';
+  wm2.style.backgroundPosition=((mv*61)%140)+'px '+((mv*29)%100)+'px';
+ }
+ /* start/stop with the quiz */
+ let wmIv=0;
+ new MutationObserver(()=>{
+  if(B.classList.contains('quiz')){buildWm();moveWm();clearInterval(wmIv);wmIv=setInterval(()=>{buildWm();moveWm()},4000)}
+  else{clearInterval(wmIv);B.classList.remove('shield')}
+ }).observe(B,{attributes:true,attributeFilter:['class']});
+
+ /* focus / visibility: blur the quiz */
+ window.addEventListener('blur',()=>{if(!dlg)shield(1)});
+ window.addEventListener('focus',()=>shield(0));
+ document.addEventListener('visibilitychange',()=>shield(document.hidden));
+ window.addEventListener('pagehide',()=>shield(1));
+ window.addEventListener('pageshow',()=>shield(0));
+
+ /* ---- MOBILE ---- */
+ /* 3+ finger touch (screenshot gestures) */
+ const multi=e=>{if(live&&e.touches&&e.touches.length>=3){e.preventDefault();shield(1,2500)}};
+ document.addEventListener('touchstart',multi,{passive:false,capture:true});
+ document.addEventListener('touchmove',multi,{passive:false,capture:true});
+ /* pinch / zoom */
+ ['gesturestart','gesturechange','gestureend'].forEach(ev=>document.addEventListener(ev,e=>{if(live){e.preventDefault();shield(1,1500)}}));
+ let lastTap=0;
+ document.addEventListener('touchend',e=>{
+  if(!live)return;
+  const now=Date.now();if(now-lastTap<300)e.preventDefault();lastTap=now;
+ },{passive:false});
+ /* rotation / split-screen / window resize (width change only, so scrolling is not affected) */
+ let lastW=window.innerWidth;
+ const sizeChanged=()=>{if(live&&Math.abs(window.innerWidth-lastW)>40){shield(1,1800)}lastW=window.innerWidth};
+ window.addEventListener('resize',sizeChanged);
+ window.addEventListener('orientationchange',()=>{if(live)shield(1,1800)});
+ /* long-press / image-save menu */
+ document.addEventListener('contextmenu',e=>{if(live){e.preventDefault();shield(1,800)}});
+
+ /* ---- DESKTOP ---- */
+ document.addEventListener('keyup',e=>{
+  if(e.key==='PrintScreen'||e.keyCode===44){
+   try{navigator.clipboard.writeText('Screenshots are disabled during the quiz.')}catch(_){}
+   shield(1,1500);
+  }
+ });
+ document.addEventListener('keydown',e=>{
+  if(!live)return;
+  const k=(e.key||'').toLowerCase(),c=e.ctrlKey||e.metaKey,
+   bad=e.key==='PrintScreen'||e.key==='F12'||
+   (c&&['p','s','c','x','a','u'].includes(k))||
+   (c&&e.shiftKey&&['i','j','c','s','3','4','5'].includes(k))||
+   (e.metaKey&&e.shiftKey);
+  if(bad){e.preventDefault();e.stopPropagation();shield(1,1200)}
+ },true);
+ ['copy','cut','dragstart','selectstart'].forEach(ev=>document.addEventListener(ev,e=>{if(live)e.preventDefault()}));
+ window.addEventListener('beforeprint',()=>{if(live)shield(1)});
+})();
+</script></body></html>
