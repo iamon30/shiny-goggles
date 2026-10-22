@@ -38,6 +38,8 @@ body.quiz #wm,body.quiz #wm2{display:block}
 @media print{body *{display:none!important}body:before{content:"Printing is disabled.";display:block;font-size:28px;padding:40px}}
 /* ANTI-CHEATING warning banner */
 #warn{display:none;position:sticky;top:0;z-index:60;background:#b3261e;color:#fff;padding:10px 12px;border-radius:8px;font-weight:700;margin:8px 0;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+/* score picture on result screen */
+#rpic{width:100%;max-width:720px;border:2px solid #d3bf93;border-radius:8px;display:block;margin:8px 0}
 </style></head><body>
 <div class="scene s1"><div class="cube"><i>7/8</i><i>0.75</i><i>x²</i><i>3/4</i><i>π</i><i>1/16</i></div></div>
 <div class="scene s2"><div class="cube"><i>R</i><i>Ø</i><i>3D</i><i>½</i><i>2.5</i><i>cm</i></div></div>
@@ -159,12 +161,22 @@ const T=[
 {k:'E',t:'Powers & Formulas',u:'Unit 13',v:'powers exponents area volume formulas machinist math',l:'<ul><li>Power = repeated factor; 5³ = 5×5×5 = 125.</li><li>(a/b)² squares both terms; a/b² squares only the denominator.</li><li>Do powers first, then × ÷, then + −.</li><li>Square A = s²; cube V = s³; circle A = πr²; cylinder V = πr²h (π = 3.14); cone V = 0.2618 D² H.</li></ul><i>AutoCAD link: AREA and MASSPROP return areas/volumes you can verify.</i>'}];
 $('#tops').innerHTML=T.map((x,i)=>`<div class="card tc" data-i="${i}"><small>${x.u}</small><br><b>${x.t}</b><br>10 unique items</div>`).join('');
 /* ---------- state ---------- */
-let cur,Q,live=0,t0,iv,dlg=0,flags=0,strikes=0,vlog=[],hideAt=0;
+let cur,Q,live=0,t0,iv,dlg=0,flags=0,strikes=0,vlog=[],hideAt=0,picData='',picName='',picPending=0;
 const TAB=Math.random().toString(36).slice(2),LOCKMS=20000;
 const rulesText=()=>`⚠ ANTI-CHEATING ON: Time limit ${QUIZ_MINUTES} minutes. `+(MAX_STRIKES>1?`Leaving this tab or app gives ${MAX_STRIKES-1} warning${MAX_STRIKES>2?'s':''}; the next time your quiz is auto-submitted. `:'Leaving this tab or app auto-submits your quiz immediately. ')+'Refreshing, closing, the Back button and opening a second tab are recorded. Screenshots and photos are not allowed: every quiz screen carries your name, email and time as a watermark.';
 const info=()=>{let v=i=>$('#'+i).value.trim(),o={ln:v('ln'),fn:v('fn'),mi:v('mi').toUpperCase().replace('.',''),sec:v('sec'),em:v('em').toLowerCase()};o.ok=!!(o.ln&&o.fn&&o.mi&&o.sec&&/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(o.em));return o};
 const show=id=>['lec','qz','res','adp'].forEach(x=>$('#'+x).hidden=x!=id);
 $('#tops').onclick=e=>{let c=e.target.closest('.tc');if(!c||live)return;cur=T[c.dataset.i];$('#lec').innerHTML=`<h2>${cur.t} <small>(${cur.u})</small></h2>${cur.l}<p><a href="${yt('machinist math '+cur.v)}" target="_blank">▶ Watch the lecture video(s) on YouTube</a></p><p><small>${rulesText()}</small></p><button id="go" class="o">Start Quiz (10 items)</button>`;show('lec');$('#lec').scrollIntoView({behavior:'smooth'});$('#go').onclick=start};
+
+/* ---------- SCORE PICTURE: auto-download ---------- */
+function savePic(){
+ if(!picData)return;
+ const a=document.createElement('a');a.href=picData;a.download=picName;a.style.display='none';
+ document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),800);picPending=0;
+}
+/* if the quiz ended while the student was away (auto-submit), download as soon as they return */
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&picPending)setTimeout(savePic,300)});
+window.addEventListener('focus',()=>{if(picPending)setTimeout(savePic,300)});
 
 /* ---------- ANTI-CHEATING: violations ---------- */
 const lastV={};
@@ -184,7 +196,7 @@ function start(){let u=info();if(!u.ok)return alert('Complete last name, first n
  if(lk[0]&&lk[0]!==TAB&&Date.now()-(+lk[1]||0)<LOCKMS)return alert('This quiz is already open in another tab or window. Close that one first.');
  let key='att:'+u.em+cur.k,att=(+localStorage[key]||0)+1;localStorage[key]=att;
  r=RNG(H([u.ln,u.fn,u.mi,u.em,cur.k,att].join('|').toLowerCase()));Q=G[cur.k].map(f=>f());
- flags=0;strikes=0;vlog=[];hideAt=0;for(const k in lastV)delete lastV[k];
+ flags=0;strikes=0;vlog=[];hideAt=0;picPending=0;for(const k in lastV)delete lastV[k];
  live={u,att};document.body.classList.add('quiz');t0=new Date();['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=true);
  localStorage.qactive=JSON.stringify({start:ts(t0),ln:u.ln,fn:u.fn,mi:u.mi,sec:u.sec,em:u.em,topic:cur.t,attempt:att});
  localStorage.qlock=TAB+'|'+Date.now();
@@ -238,10 +250,16 @@ function finish(reason){if(!live)return;let {u,att}=live;live=0;document.body.cl
  let key=Q.map((q,i)=>{let c=document.querySelector(`input[name=q${i}]:checked`),s=c?q.o[+c.value]:'';return{n:i+1,q:q.q,a:q.a,s,ok:s===q.a}}),sc=key.filter(k=>k.ok).length;
  let rec={start:ts(t0),end:ts(end),ln:u.ln,fn:u.fn,mi:u.mi,sec:u.sec,em:u.em,topic:cur.t,attempt:att,score:sc,reason,key,keyText:key.map(k=>`${k.n}) ${k.s||'-'} | ${k.a} ${k.ok?'✓':'✗'}`).join('; ')};
  ['ln','fn','mi','sec','em'].forEach(i=>$('#'+i).disabled=false);
- let c=img(rec);c.toBlob(b=>{let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=`${u.ln}_${u.fn}_${cur.k}_attempt${att}.png`;a.click()});
+ /* build the score picture and download it automatically */
+ picData=img(rec).toDataURL('image/png');
+ picName=`${u.ln}_${u.fn}_${cur.k}_attempt${att}_score${sc}of10.png`.replace(/[\\/:*?"<>|\s]+/g,'_');
+ if(document.hidden)picPending=1;else savePic();
  let lg=JSON.parse(localStorage.log||'[]');lg.push({end:rec.end,n:`${u.ln}, ${u.fn} ${u.mi}.`,sec:u.sec,em:u.em,tp:cur.t,att,sc,reason});localStorage.log=JSON.stringify(lg);
  send(rec);
- $('#res').innerHTML=`<h2>Score: ${sc}/10 <small>(Attempt ${att})</small></h2><p>${reason}<br>Start: ${rec.start}<br>End: ${rec.end}</p>${key.map(k=>`<p><b>${k.n}.</b> ${k.q}<br><span class="${k.ok?'ok':'no'}">Your answer: ${k.s||'(none)'} ${k.ok?'✓':'✗'}</span> — Answer key: <b>${k.a}</b></p>`).join('')}<p>Result picture downloaded automatically.</p>`;show('res')}
+ $('#res').innerHTML=`<h2>Score: ${sc}/10 <small>(Attempt ${att})</small></h2><p>${reason}<br>Start: ${rec.start}<br>End: ${rec.end}</p>
+ <p><b>Your score picture</b> was downloaded automatically.</p><img id="rpic" alt="Score picture" src="${picData}"><button id="dlpic" class="o">⬇ Download score picture</button><p><small>Phone: if it did not download, press and hold the picture above and choose “Save image”.</small></p>
+ ${key.map(k=>`<p><b>${k.n}.</b> ${k.q}<br><span class="${k.ok?'ok':'no'}">Your answer: ${k.s||'(none)'} ${k.ok?'✓':'✗'}</span> — Answer key: <b>${k.a}</b></p>`).join('')}`;
+ show('res');$('#dlpic').onclick=savePic;try{$('#res').scrollIntoView({behavior:'smooth'})}catch(_){}}
 function send(rec){let u=url();if(/^https:\/\/script\.google\.com\//.test(u))fetch(u,{method:'POST',mode:'no-cors',body:JSON.stringify(rec)}).catch(()=>{})}
 function img(rec){const W=900,c=document.createElement('canvas'),x=c.getContext('2d');
  const wrap=(s,w,f)=>{x.font=f;let L=[],l='';for(const wd of s.split(' ')){let n=l?l+' '+wd:wd;if(x.measureText(n).width>w&&l){L.push(l);l=wd}else l=n}L.push(l);return L};
